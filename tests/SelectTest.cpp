@@ -98,19 +98,37 @@ struct tab2 : sqlpp::table_t<tab2, column1>
 constexpr t_acl a;
 constexpr tab2 t2;
 
-int main()
+int SelectTest(int, char*[])
 {
-  std::shared_ptr<sqlpp::postgresql::connection_config> conf(new sqlpp::postgresql::connection_config);
-  conf->host = "localhost";
-  conf->dbname = "postgres";
-  conf->user = "postgres";
-  conf->password = "postgres";
-  conf->debug = true;
-  conf->port = 5432;
+  std::shared_ptr<sqlpp::postgresql::connection_config> config(new sqlpp::postgresql::connection_config);
+
+#ifdef WIN32
+  config->dbname = "test";
+  config->user = "test";
+  config->password = "test";
+  config->debug = true;
+#else
+  // TODO: assume there is a DB with the "username" as a name and the current user has "peer" access rights
+  config->dbname = getenv("USER");
+  config->user = config->dbname;
+  config->debug = true;
+#endif
 
   try
   {
-    sqlpp::postgresql::connection db(conf);
+    sqlpp::postgresql::connection db(config);
+
+    // Make sure the table exists
+    db.execute(R"(DROP TABLE IF EXISTS t_acl;)");
+    db.execute(R"(DROP TABLE IF EXISTS tab2;)");
+    db.execute(R"(CREATE TABLE t_acl
+               (
+                 c_uid int NOT NULL
+               ))");
+    db.execute(R"(CREATE TABLE tab2
+               (
+                 column1 int NOT NULL
+               ))");
     db.start_transaction();
     db(sqlpp::postgresql::insert_into(a).set(a.c_uid = 99999));
     auto sel = db(sqlpp::postgresql::insert_into(a).set(a.c_uid = 99999).returning(a.c_uid));
@@ -125,12 +143,13 @@ int main()
     for (const auto& row : inserted)
       std::cout << row.c_uid;
 
-    db.rollback_transaction();
+    db.rollback_transaction(true);
   }
-  catch (sqlpp::postgresql::pg_exception e)
+  catch (const sqlpp::postgresql::failure& e)
   {
     std::cout << e.what();
-    std::cout << "\n" << e.code().toString();
-    std::cout << "\n" << e.message().toString();
+    return 1;
   }
+
+  return 0;
 }

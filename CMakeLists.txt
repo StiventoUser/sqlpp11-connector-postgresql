@@ -27,11 +27,11 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 project(sqlpp11-connector-postgresql VERSION 0.1 LANGUAGES CXX)
 
-option( ENABLE_TESTS  "" )
+option(ENABLE_TESTS "Build unit tests" ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(ConfigPackageLocation lib/cmake/sqlpp-postgresql)
+set(ConfigPackageLocation lib/cmake/sqlpp-connector-postgresql)
 
 find_package(Sqlpp11 REQUIRED)
 find_package(PostgreSQL REQUIRED)
@@ -63,7 +63,7 @@ endif()
 #install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/sqlpp11" DESTINATION include COMPONENT Devel)
 install(
   FILES
-    cmake/Sqlpp-postgresqlConfig.cmake
+    cmake/Sqlpp-connector-postgresqlConfig.cmake
   DESTINATION
     ${ConfigPackageLocation}
   COMPONENT
