@@ -33,7 +33,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(ConfigPackageLocation lib/cmake/sqlpp-connector-postgresql)
 
-find_package(Date REQUIRED)
+find_package(HinnantDate REQUIRED)
 find_package(Sqlpp11 REQUIRED)
 find_package(PostgreSQL REQUIRED)
 find_package(Boost REQUIRED)
