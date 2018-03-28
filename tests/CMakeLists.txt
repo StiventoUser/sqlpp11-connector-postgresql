@@ -25,6 +25,7 @@
 
 # The available tests
 set(test_names
+	DatetimeConversionTest
 	BasicTest
 	ConstructorTest
 	DateTest

@@ -34,6 +34,7 @@ add_library(sqlpp11-connector-postgresql STATIC
 	exception.cpp
 	prepared_statement.cpp
 	detail/connection_handle.cpp
+	detail/parse_utils.cpp
 	detail/prepared_statement_handle.cpp
 	result.cpp
 )
@@ -44,6 +45,7 @@ add_library(sqlpp11-connector-postgresql-dynamic SHARED
 	exception.cpp
 	prepared_statement.cpp
 	detail/connection_handle.cpp
+	detail/parse_utils.cpp
 	detail/prepared_statement_handle.cpp
 	detail/dynamic_libpq.cpp
 	result.cpp
