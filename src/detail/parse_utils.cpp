@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 
+#include <date/date.h>
+
 namespace sqlpp
 {
 	namespace postgresql
@@ -21,8 +23,6 @@ namespace sqlpp
 
 			const auto date_digits = std::vector<char>{ 1, 1, 1, 1, 0, 1, 1, 0, 1, 1 };  // 2016-11-10
 			const auto time_digits = std::vector<char>{ 0, 1, 1, 0, 1, 1, 0, 1, 1 };     // ' 13:12:11'
-			const auto tz_digits = std::vector<char>{ 0, 1, 1 };                         // -05
-			const auto tz_min_digits = std::vector<char>{ 0, 1, 1 };                     // :30
 
 			auto check_digits(const char* text, const std::vector<char>& digitFlags) -> bool
 			{
@@ -67,37 +67,34 @@ namespace sqlpp
 			{
 				::sqlpp::chrono::microsecond_point value;
 
-				if (len >= date_digits.size() && check_digits(date_string, date_digits))
-				{
-					const auto ymd =
-						::date::year(std::atoi(date_string)) / std::atoi(date_string + 5) / std::atoi(date_string + 8);
-					value = ::sqlpp::chrono::day_point(ymd);
-				}
-				else
-				{
-					if (debug)
-						std::cerr << "PostgreSQL debug: got invalid date_time" << std::endl;
-					return {};
-				}
+				value = parse_date(date_string, len, debug);
+
+				// TODO check for empty?
+
+
 
 				auto date_time_size = date_digits.size() + time_digits.size();
 				const auto time_string = date_string + date_digits.size();
-				if ((len >= date_time_size) && check_digits(date_string, date_digits))
+
+				if ((len >= date_time_size) && check_digits(time_string, time_digits))
 				{
+					const auto hourOffset = 1; // ' 12'
+					const auto minuteOffset = hourOffset + 3; // ' 12:13'
+					const auto secondOffset = minuteOffset + 3; // ' 12:13:14'
+
 					// not the ' ' (or standard: 'T') prefix for times
-					value += std::chrono::hours(std::atoi(time_string + 1)) + std::chrono::minutes(std::atoi(time_string + 4)) +
-						std::chrono::seconds(std::atoi(time_string + 7));
+					value += std::chrono::hours(std::atoi(time_string + hourOffset)) +
+						std::chrono::minutes(std::atoi(time_string + minuteOffset)) +
+						std::chrono::seconds(std::atoi(time_string + secondOffset));
 				}
 				else
 				{
 					return {};
 				}
 
-				bool has_ms = false;
-				if ((len > date_time_size) && (time_string[time_digits.size()] == '.'))
+				if (len > date_time_size && date_string[date_time_size] == '.')
 				{
-					has_ms = true;
-					const auto ms_string = time_string + time_digits.size() + 1;
+					const auto ms_string = date_string + date_time_size + 1;
 
 					int digits_count = 0;
 					while (ms_string[digits_count] != '\0' && ms_string[digits_count] != '-' && ms_string[digits_count] != '+')
@@ -119,7 +116,7 @@ namespace sqlpp
 						return {};
 					}
 
-					date_time_size += digits_count;
+					date_time_size += digits_count + 1;
 
 					int pg_ms_num = std::atoi(ms_string);
 
@@ -128,35 +125,35 @@ namespace sqlpp
 
 					value += std::chrono::microseconds(pg_ms_num);
 				}
-				if (len >= (date_time_size + tz_digits.size()))
+
+				if (len > date_time_size)
 				{
 					const auto tz_string = date_string + date_time_size;
+					const auto tz_colon = tz_string + 3;
+
 					const auto zone_hour = std::atoi(tz_string);
 					auto zone_min = 0;
 
-					if ((len >= date_time_size + tz_digits.size() + tz_min_digits.size()) &&
-						check_digits(tz_string + tz_digits.size(), tz_min_digits))
+					if (tz_colon[0] == ':')
 					{
-						zone_min = std::atoi(tz_string + tz_digits.size() + 1);
+						zone_min = std::atoi(tz_colon + 1);
 					}
-					// ignore -00:xx, as there currently is no timezone using it, and hopefully never will be
+
 					if (zone_hour >= 0)
 					{
 						value -= std::chrono::hours(zone_hour) + std::chrono::minutes(zone_min);
 					}
 					else
 					{
-						value += std::chrono::hours(zone_hour) + std::chrono::minutes(zone_min);
+						value += std::chrono::hours(-zone_hour) + std::chrono::minutes(zone_min);
 					}
 				}
 				if (debug)
 				{
-					auto ts = std::chrono::system_clock::to_time_t(value);
-					std::tm* tm = std::localtime(&ts);
-					std::string time_str{ "1900-01-01 00:00:00 CEST" };
-					strftime(const_cast<char*>(time_str.data()), time_str.size(), "%F %T %Z", tm);
-					std::cerr << "PostgreSQL debug: calculated timestamp " << time_str << std::endl;
+					std::cerr << "PostgreSQL debug: calculated timestamp " << ::date::format("%F %T", value) << std::endl;
 				}
+
+				return value;
 			}
 		}
 	}

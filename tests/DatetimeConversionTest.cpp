@@ -64,22 +64,22 @@ int DatetimeConversionTest(int, char*[])
 
 	require_equal(__LINE__, time_res, date::sys_days{ 2018_y / feb / 25 } + 20h + 30min + 10s + 100000us);
 
-	time_string = "2018-02-25 20:30:10.123456+2";
+	time_string = "2018-02-25 20:30:10.123456+02";
 	time_res = sqlpp::postgresql::detail::parse_datetime(time_string.c_str(), time_string.size(), true);
 
 	require_equal(__LINE__, time_res, date::sys_days{ 2018_y / feb / 25 } + 20h + 30min + 10s + 123456us - 2h);
 
-	time_string = "2018-02-25 20:30:10.123456-2";
+	time_string = "2018-02-25 20:30:10.123456-02";
 	time_res = sqlpp::postgresql::detail::parse_datetime(time_string.c_str(), time_string.size(), true);
 
 	require_equal(__LINE__, time_res, date::sys_days{ 2018_y / feb / 25 } + 20h + 30min + 10s + 123456us + 2h);
 
-	time_string = "2018-02-25 20:30:10.123456+2:30";
+	time_string = "2018-02-25 20:30:10.123456+02:30";
 	time_res = sqlpp::postgresql::detail::parse_datetime(time_string.c_str(), time_string.size(), true);
 
 	require_equal(__LINE__, time_res, date::sys_days{ 2018_y / feb / 25 } + 20h + 30min + 10s + 123456us - 2h - 30min);
 
-	time_string = "2018-02-25 20:30:10.123456-2:30";
+	time_string = "2018-02-25 20:30:10.123456-02:30";
 	time_res = sqlpp::postgresql::detail::parse_datetime(time_string.c_str(), time_string.size(), true);
 
 	require_equal(__LINE__, time_res, date::sys_days{ 2018_y / feb / 25 } + 20h + 30min + 10s + 123456us + 2h + 30min);
